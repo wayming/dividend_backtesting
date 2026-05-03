@@ -93,6 +93,48 @@ class AverageDownStrategy(TradingStrategy):
         
         return operations
 
+class AverageDownCostBasedStrategy(TradingStrategy):
+    def __init__(self, symbols) -> None:
+        super().__init__()
+        self.symbols = symbols
+        # 补仓逻辑：基于当前持仓成本的跌幅
+        # (成本跌幅阈值, 投入金额占Cap的比例)
+        self.average_down_bands = {
+            "band1": (0.80, 0.2), # 现价比成本低 20%，投入 0.2倍 Cap
+            "band2": (0.70, 0.5), # 现价比成本低 30%，投入 0.5倍 Cap
+            "band3": (0.50, 1.0), # 现价比成本低 50%，投入 1.0倍 Cap (腰斩重仓)
+            "band4": (0.30, 2.0), # 现价比成本低 70%，投入 2.0倍 Cap (终极低吸)
+        }
+        self.triggered_bands = {symbol: set() for symbol in self.symbols}
+        self.cap = 0
+        
+    def execute(self, date, cash, holdings: dict, market_data) -> list[tuple[str, str, float]]:
+        operations = []
+        for symbol, holding in holdings.items():
+            if symbol not in market_data: continue
+            if holding.shares <= 0: continue
+            
+            self.cap = holding.initial_shares * holding.initial_price
+            
+            avg_cost_per_share = holding.total_purchase_cost/holding.shares
+            close_price = market_data[symbol]["Close"]
+            
+            if close_price > avg_cost_per_share * 1.20:
+                self.triggered_bands[symbol].clear() # 价格回升超过20%，重置补仓档位
+                continue
+            
+            for band, (price_threshold, buy_ratio) in self.average_down_bands.items():
+                if band in self.triggered_bands[symbol]:
+                    continue # 已经触发过这个档位了
+                
+                if close_price < avg_cost_per_share * price_threshold:
+                    target_buy_amount = self.cap * buy_ratio
+                    target_buy_shares = target_buy_amount // close_price
+                    operations.append((OPERATION_BUY, symbol, target_buy_shares))
+                    self.triggered_bands[symbol].add(band)
+                    logging.info(f"Average down: {symbol} trigger {band} at price {close_price}, avg cost {avg_cost_per_share}, buy {target_buy_shares} shares at {close_price}")
+        return operations
+    
 # Average down by MA250
 # Each band only trigger once, and restart from band1 when MA250 exceeds initial price
 class AverageDownByMA250Strategy(TradingStrategy):

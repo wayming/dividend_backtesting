@@ -20,7 +20,7 @@ class Portfolio_Conifg:
     
     floor_shares_rate:float = 0.2
     regular_investment_rate : float = 0.5
-
+    
     def export(self):
         return pprint.pformat(dataclasses.asdict(self))
     

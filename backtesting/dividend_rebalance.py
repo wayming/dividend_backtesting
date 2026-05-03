@@ -93,7 +93,7 @@ def back_testing_yh_finance(start_backtest_date:datetime.datetime, symbols:str, 
     config.initial_fund = initial_fund
     portfolio = Portfolio(config)
     portfolio.add_cash(start_backtest_date, initial_fund)
-    portfolio.add_balance_strategy(AverageDownByMA250Strategy(stock_data.symbols))
+    portfolio.add_balance_strategy(AverageDownCostBasedStrategy(stock_data.symbols))
     portfolio.add_balance_strategy(TakeProfitPercentageStrategy(config.take_profit_ratio, config.take_profit_sell_ratio))
 
     # Historical records DataFrame
