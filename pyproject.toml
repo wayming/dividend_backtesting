@@ -1,0 +1,19 @@
+[project]
+name = "backtesting"
+version = "0.1.0"
+dependencies = [
+    "pandas",
+    "numpy",
+    "yfinance",
+    "requests>=2.32,<3",          # 允许 2.32.x
+    "urllib3>=1.26.20,<3",        # 允许 2.x
+    "charset_normalizer<4",
+    "matplotlib"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["backtesting*"]
